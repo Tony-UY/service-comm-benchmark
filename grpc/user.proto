@@ -1,0 +1,11 @@
+syntax = "proto3";
+package user;
+
+message UserRequest { int32 id = 1; }
+message UserResponse { int32 id = 1; string name = 2; string email = 3; }
+message ActivityEvent { string event_type = 1; int64 timestamp = 2; }
+
+service UserService {
+  rpc GetUser (UserRequest) returns (UserResponse);
+  rpc StreamUserActivity (UserRequest) returns (stream ActivityEvent);
+}

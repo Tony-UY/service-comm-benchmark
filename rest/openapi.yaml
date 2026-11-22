@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: API Gestion Utilisateurs ENSIIE
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      summary: Créer un utilisateur
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          headers:
+            Location:
+              schema:
+                type: string
+  /users/{id}:
+    get:
+      summary: Récupérer un profil utilisateur
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 42
+      responses:
+        '200':
+          description: Succès
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '304':
+          description: Non modifié (Cache Hit)
+        '404':
+          description: Utilisateur introuvable
+    put:
+      summary: Mise à jour idempotente
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '204':
+          description: Mise à jour effectuée avec succès (sans corps)
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, name, email]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+    UserInput:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string }
+        email: { type: string }

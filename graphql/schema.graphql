@@ -1,0 +1,21 @@
+type Order {
+  id: ID!
+  amount: Float!
+  item: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  orders(useLoader: Boolean = true): [Order!]!
+}
+
+type Query {
+  user(id: ID!): User
+  users(limit: Int! = 100): [User!]!
+}
+
+type Mutation {
+  updateUserEmail(id: ID!, email: String!): User!
+}
