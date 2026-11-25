@@ -51,7 +51,7 @@ users_10000 = [{"id": i, "name": f"User {i}", "email": f"user{i}@example.com"} f
 # 1. Tailles de payload
 # REST
 rest_min_1 = json.dumps(user_single, separators=(",", ":")).encode("utf-8")  # 59 o
-rest_full_1 = json.dumps(user_full, separators=(",", ":")).encode("utf-8")   # 139 o (over-fetching)
+rest_full_1 = json.dumps(user_full, separators=(",", ":")).encode("utf-8")   # 139 o (over-fetching simulé)
 rest_min_100 = json.dumps(users_100, separators=(",", ":")).encode("utf-8")
 rest_min_10000 = json.dumps(users_10000, separators=(",", ":")).encode("utf-8")
 
@@ -68,39 +68,34 @@ gql_min_1 = json.dumps({"data": {"user": gql_single_eq}}, separators=(",", ":"))
 gql_min_100 = json.dumps({"data": {"users": gql_100}}, separators=(",", ":")).encode("utf-8")
 gql_min_10000 = json.dumps({"data": {"users": gql_10000}}, separators=(",", ":")).encode("utf-8")
 
-# SOAP 1.1 (exactement la trame du rapport)
-soap_xml_min_1 = (
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="http://example.com/user">'
-    '<soapenv:Header/><soapenv:Body><usr:GetUserResponse>'
-    '<usr:id>42</usr:id><usr:name>Alice Martin</usr:name><usr:email>alice@example.com</usr:email>'
-    '</usr:GetUserResponse></soapenv:Body></soapenv:Envelope>'
-).encode("utf-8")  # 312 o
-
-soap_xml_fmt_1 = (
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="http://example.com/user">\n'
-    '  <soapenv:Header/><soapenv:Body><usr:GetUserResponse>\n'
-    '    <usr:id>42</usr:id><usr:name>Alice Martin</usr:name><usr:email>alice@example.com</usr:email>\n'
-    '  </usr:GetUserResponse></soapenv:Body>\n'
-    '</soapenv:Envelope>'
-).encode("utf-8")  # 324 o
-
-soap_items_100 = "".join(
-    f'<usr:user><usr:id>{u["id"]}</usr:id><usr:name>{u["name"]}</usr:name><usr:email>{u["email"]}</usr:email></usr:user>'
-    for u in users_100
+# SOAP 1.1 (trame réellement émise par soap/server.py, contrôlée par verify_payloads.py)
+SOAP_HEAD = (
+    "<?xml version='1.0' encoding='UTF-8'?>\n"
+    '<soap11env:Envelope xmlns:soap11env="http://schemas.xmlsoap.org/soap/envelope/" '
+    'xmlns:tns="http://example.com/user"><soap11env:Body>'
 )
-soap_xml_100 = (
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="http://example.com/user">'
-    f'<soapenv:Body><usr:GetUsersResponse>{soap_items_100}</usr:GetUsersResponse></soapenv:Body></soapenv:Envelope>'
-).encode("utf-8")
+SOAP_TAIL = "</soap11env:Body></soap11env:Envelope>"
 
-soap_items_10000 = "".join(
-    f'<usr:user><usr:id>{u["id"]}</usr:id><usr:name>{u["name"]}</usr:name><usr:email>{u["email"]}</usr:email></usr:user>'
-    for u in users_10000
-)
-soap_xml_10000 = (
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usr="http://example.com/user">'
-    f'<soapenv:Body><usr:GetUsersResponse>{soap_items_10000}</usr:GetUsersResponse></soapenv:Body></soapenv:Envelope>'
-).encode("utf-8")
+
+def soap_user(u) -> str:
+    return f'<tns:id>{u["id"]}</tns:id><tns:name>{u["name"]}</tns:name><tns:email>{u["email"]}</tns:email>'
+
+
+def soap_list(users) -> bytes:
+    """Liste simulée au même format (le serveur n'expose que GetUser)."""
+    items = "".join(f"<tns:UserModel>{soap_user(u)}</tns:UserModel>" for u in users)
+    return (
+        f"{SOAP_HEAD}<tns:GetUsersResponse><tns:GetUsersResult>{items}"
+        f"</tns:GetUsersResult></tns:GetUsersResponse>{SOAP_TAIL}"
+    ).encode("utf-8")
+
+
+soap_xml_1 = (
+    f"{SOAP_HEAD}<tns:GetUserResponse><tns:GetUserResult>{soap_user(user_single)}"
+    f"</tns:GetUserResult></tns:GetUserResponse>{SOAP_TAIL}"
+).encode("utf-8")  # 383 o
+soap_xml_100 = soap_list(users_100)
+soap_xml_10000 = soap_list(users_10000)
 
 # gRPC Protobuf
 grpc_bin_1 = user_pb2.UserResponse(id=42, name="Alice Martin", email="alice@example.com").SerializeToString()  # 35 o
@@ -127,7 +122,7 @@ p50_rest_std, p95_rest_std = bench_fn(lambda: json.loads(rest_min_1))
 p50_rest_orjson, p95_rest_orjson = bench_fn(lambda: orjson.loads(rest_min_1))
 p50_gql_std, p95_gql_std = bench_fn(lambda: json.loads(gql_targeted_1))
 p50_gql_orjson, p95_gql_orjson = bench_fn(lambda: orjson.loads(gql_targeted_1))
-p50_soap, p95_soap = bench_fn(lambda: etree.fromstring(soap_xml_min_1))
+p50_soap, p95_soap = bench_fn(lambda: etree.fromstring(soap_xml_1))
 
 print("=" * 116)
 print("BENCHMARK MULTI-ÉCHELLE DE COMMUNICATION DE SERVICES (ENSIIE 2026-2027)")
@@ -156,21 +151,21 @@ print(
     f"{f'{len(rest_full_1)/len(grpc_bin_1):.1f}x':<6} | {'-':<19} | {'-':<22} | -"
 )
 print(
-    f"{'GraphQL (Champs choisis)':<26} | {len(gql_targeted_1):>3} o / {len(gzip.compress(gql_targeted_1)):>3} o      | "
-    f"{f'{len(gql_targeted_1)/len(grpc_bin_1):.1f}x':<6} | "
-    f"{len(gql_min_100):>5} o / {len(gzip.compress(gql_min_100)):>3} o     | "
-    f"{len(gql_min_10000)/1000:>6.2f} Ko / {len(gzip.compress(gql_min_10000))/1000:>5.2f} Ko   | "
+    f"{'GraphQL (name, email)':<26} | {len(gql_targeted_1):>3} o / {len(gzip.compress(gql_targeted_1)):>3} o      | "
+    f"{f'{len(gql_targeted_1)/len(grpc_bin_1):.1f}x':<6} | {'-':<19} | {'-':<22} | "
     f"{p50_gql_std:.2f} / {p95_gql_std:.2f} µs (std) | {p50_gql_orjson:.2f} µs (orjson)"
 )
 print(
-    f"{'SOAP 1.1 (Minifié)':<26} | {len(soap_xml_min_1):>3} o / {len(gzip.compress(soap_xml_min_1)):>3} o      | "
-    f"{f'{len(soap_xml_min_1)/len(grpc_bin_1):.1f}x':<6} | "
+    f"{'GraphQL (id, name, email)':<26} | {len(gql_min_1):>3} o / {len(gzip.compress(gql_min_1)):>3} o      | "
+    f"{f'{len(gql_min_1)/len(grpc_bin_1):.1f}x':<6} | "
+    f"{len(gql_min_100):>5} o / {len(gzip.compress(gql_min_100)):>3} o     | "
+    f"{len(gql_min_10000)/1000:>6.2f} Ko / {len(gzip.compress(gql_min_10000))/1000:>5.2f} Ko   | -"
+)
+print(
+    f"{'SOAP 1.1 (Spyne)':<26} | {len(soap_xml_1):>3} o / {len(gzip.compress(soap_xml_1)):>3} o      | "
+    f"{f'{len(soap_xml_1)/len(grpc_bin_1):.1f}x':<6} | "
     f"{len(soap_xml_100):>5} o / {len(gzip.compress(soap_xml_100)):>3} o     | "
     f"{len(soap_xml_10000)/1000:>6.2f} Ko / {len(gzip.compress(soap_xml_10000))/1000:>5.2f} Ko   | "
     f"{p50_soap:.2f} / {p95_soap:.2f} µs (lxml)"
-)
-print(
-    f"{'SOAP 1.1 (Formaté)':<26} | {len(soap_xml_fmt_1):>3} o / {len(gzip.compress(soap_xml_fmt_1)):>3} o      | "
-    f"{f'{len(soap_xml_fmt_1)/len(grpc_bin_1):.1f}x':<6} | {'-':<19} | {'-':<22} | -"
 )
 print("=" * 116)

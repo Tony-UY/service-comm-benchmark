@@ -30,10 +30,11 @@ service-comm-benchmark/
 ├── LICENSE                 # Licence MIT
 ├── bench/
 │   ├── run_benchmarks.py   # Script de benchmark autonome en 1 commande
+│   ├── verify_payloads.py  # Contrôle des tailles du rapport sur les vrais serveurs
 │   ├── user_pb2.py         # Stubs Protobuf compilés
 │   └── user_pb2_grpc.py
 ├── soap/
-│   ├── UserService.wsdl    # Contrat d'interface formel WSDL 1.1 + XSD + Fault
+│   ├── UserService.wsdl    # Contrat WSDL 1.1 + XSD servi par le serveur (/?wsdl)
 │   ├── server.py           # Serveur Spyne WSGI avec levée de soap:Fault
 │   └── client.py           # Client Zeep avec capture de SoapFault
 ├── rest/
@@ -73,9 +74,16 @@ pip install -r requirements.txt
 python bench/run_benchmarks.py
 ```
 
-Ce script autonome mesure :
+Ce script autonome mesure, sur des réponses construites en mémoire :
 1. Les tailles de charges utiles brutes et compressées gzip à **1, 100 et 10 000 enregistrements**.
 2. La latence CPU de désérialisation en mémoire sur **5 000 itérations** (médiane p50 et 95e percentile p95).
+
+### Contrôle des tailles sur les vrais serveurs
+```bash
+python bench/verify_payloads.py
+```
+
+Ce script démarre les quatre serveurs l'un après l'autre (ports 8000 et 50051 libres) et échoue si une taille publiée dans le rapport ne correspond plus à la réponse reçue.
 
 ---
 
@@ -86,8 +94,9 @@ Ce script autonome mesure :
 | **gRPC Protobuf** | **35 o** | **1,0x (Base)** | Encodage binaire compact (tags d'index + varints). |
 | **REST (Minifié)** | **59 o** | **1,7x** | JSON minimal `{"id":42,"name":"...","email":"..."}`. |
 | **GraphQL (Champs choisis)** | **69 o** | **2,0x** | Enveloppe `{"data":{"user":...}}` limitée aux champs demandés (`name`, `email`). |
-| **REST (Profil complet)** | **139 o** | **4,0x** | Sur-récupération (*over-fetching*) incluant métadonnées non filtrées. |
-| **SOAP 1.1 (Enveloppe XML)** | **324 o** *(312 o min.)* | **9,3x** *(8,9x)* | Enveloppe XML, espaces de noms et balises ouvrantes/fermantes. |
+| **GraphQL (id, name, email)** | **79 o** | **2,3x** | Mêmes champs que REST et gRPC, avec l'enveloppe `data`/`user`. |
+| **REST (Profil complet, simulé)** | **139 o** | **4,0x** | Illustration de la sur-récupération (*over-fetching*), non renvoyée par `rest/server.py`. |
+| **SOAP 1.1 (Réponse Spyne)** | **383 o** | **10,9x** | Déclaration XML, enveloppe, espaces de noms et balises ouvrantes/fermantes. |
 
 *Exécutez `python bench/run_benchmarks.py` pour obtenir également les mesures multi-échelles (100 et 10 000 enregistrements, avec et sans gzip) ainsi que les latences CPU de désérialisation (`json` standard, `orjson`, `lxml`, `protobuf`).*
 

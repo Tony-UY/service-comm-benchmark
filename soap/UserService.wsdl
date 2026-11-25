@@ -1,32 +1,55 @@
-<definitions name="UserService" targetNamespace="http://example.com/user"
-    xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://example.com/user"
-    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <types>
-    <xsd:schema targetNamespace="http://example.com/user">
-      <xsd:element name="GetUserRequest"><xsd:complexType><xsd:sequence><xsd:element name="id" type="xsd:int"/></xsd:sequence></xsd:complexType></xsd:element>
-      <xsd:element name="GetUserResponse"><xsd:complexType><xsd:sequence>
-        <xsd:element name="id" type="xsd:int"/><xsd:element name="name" type="xsd:string"/><xsd:element name="email" type="xsd:string"/>
-      </xsd:sequence></xsd:complexType></xsd:element>
-      <xsd:element name="UserNotFoundFault"><xsd:complexType><xsd:sequence>
-        <xsd:element name="message" type="xsd:string"/><xsd:element name="id" type="xsd:int"/>
-      </xsd:sequence></xsd:complexType></xsd:element>
-    </xsd:schema>
-  </types>
-  <message name="GetUserInput"><part name="parameters" element="tns:GetUserRequest"/></message>
-  <message name="GetUserOutput"><part name="parameters" element="tns:GetUserResponse"/></message>
-  <message name="UserNotFoundFault"><part name="fault" element="tns:UserNotFoundFault"/></message>
-  <portType name="UserPortType">
-    <operation name="GetUser">
-      <input message="tns:GetUserInput"/><output message="tns:GetUserOutput"/>
-      <fault name="UserNotFound" message="tns:UserNotFoundFault"/>
-    </operation>
-  </portType>
-  <binding name="UserBinding" type="tns:UserPortType">
-    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
-    <operation name="GetUser"><soap:operation soapAction="http://example.com/user/GetUser"/>
-      <input><soap:body use="literal"/></input><output><soap:body use="literal"/></output>
-      <fault name="UserNotFound"><soap:fault name="UserNotFound" use="literal"/></fault>
-    </operation>
-  </binding>
-  <service name="UserService"><port name="UserPort" binding="tns:UserBinding"><soap:address location="http://example.com/ws/user"/></port></service>
-</definitions>
+<wsdl:definitions xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:plink="http://schemas.xmlsoap.org/ws/2003/05/partner-link/" xmlns:wsdlsoap11="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdlsoap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap11enc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soap11env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soap12env="http://www.w3.org/2003/05/soap-envelope" xmlns:soap12enc="http://www.w3.org/2003/05/soap-encoding" xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing" xmlns:xop="http://www.w3.org/2004/08/xop/include" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:tns="http://example.com/user" targetNamespace="http://example.com/user" name="Application">
+  <wsdl:types>
+    <xs:schema targetNamespace="http://example.com/user" elementFormDefault="qualified">
+      <xs:complexType name="UserModel">
+        <xs:sequence>
+          <xs:element name="id" type="xs:integer" minOccurs="0" nillable="true"/>
+          <xs:element name="name" type="xs:string" minOccurs="0" nillable="true"/>
+          <xs:element name="email" type="xs:string" minOccurs="0" nillable="true"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="GetUser">
+        <xs:sequence>
+          <xs:element name="id" type="xs:integer" minOccurs="0" nillable="true"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="GetUserResponse">
+        <xs:sequence>
+          <xs:element name="GetUserResult" type="tns:UserModel" minOccurs="0" nillable="true"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="UserModel" type="tns:UserModel"/>
+      <xs:element name="GetUser" type="tns:GetUser"/>
+      <xs:element name="GetUserResponse" type="tns:GetUserResponse"/>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="GetUser">
+    <wsdl:part name="GetUser" element="tns:GetUser"/>
+  </wsdl:message>
+  <wsdl:message name="GetUserResponse">
+    <wsdl:part name="GetUserResponse" element="tns:GetUserResponse"/>
+  </wsdl:message>
+  <wsdl:service name="UserService">
+    <wsdl:port name="Application" binding="tns:Application">
+      <wsdlsoap11:address location="http://localhost:8000/"/>
+    </wsdl:port>
+  </wsdl:service>
+  <wsdl:portType name="Application">
+    <wsdl:operation name="GetUser" parameterOrder="GetUser">
+      <wsdl:input name="GetUser" message="tns:GetUser"/>
+      <wsdl:output name="GetUserResponse" message="tns:GetUserResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="Application" type="tns:Application">
+    <wsdlsoap11:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="GetUser">
+      <wsdlsoap11:operation soapAction="GetUser" style="document"/>
+      <wsdl:input name="GetUser">
+        <wsdlsoap11:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="GetUserResponse">
+        <wsdlsoap11:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+</wsdl:definitions>

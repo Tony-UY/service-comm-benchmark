@@ -8,7 +8,7 @@ type User {
   id: ID!
   name: String!
   email: String!
-  orders(useLoader: Boolean = true): [Order!]!
+  orders(useLoader: Boolean! = true): [Order!]!
 }
 
 type Query {
