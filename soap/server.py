@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-# Python 3.12 compatibility shim for Spyne 2.14
-import sys, six
-if not hasattr(six.moves, 'collections_abc'):
-    import collections.abc
-    six.moves.collections_abc = collections.abc
-sys.modules['spyne.util.six'] = six
-sys.modules['spyne.util.six.moves'] = six.moves
+# Compatibilité Python 3.12+ : le six 1.14 embarqué par Spyne 2.14 repose sur
+# find_module(), supprimé en 3.12. On redirige uniquement ses sous-modules moves
+# vers le paquet six installé (le reste du six embarqué est spécifique à Spyne).
+# En 3.10 / 3.11, Spyne fonctionne tel quel.
+import sys
+if sys.version_info >= (3, 12):
+    import importlib
+    for _name in ('six.moves', 'six.moves.collections_abc', 'six.moves.http_cookies',
+                  'six.moves.urllib', 'six.moves.urllib.error', 'six.moves.urllib.parse',
+                  'six.moves.urllib.request'):
+        sys.modules['spyne.util.' + _name] = importlib.import_module(_name)
 
 from spyne import Application, rpc, ServiceBase, Integer, Unicode, ComplexModel, Fault
 from spyne.protocol.soap import Soap11
