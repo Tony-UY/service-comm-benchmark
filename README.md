@@ -79,14 +79,17 @@ Ce script autonome mesure :
 
 ---
 
-## 4. Synthèse des résultats mesurés (Extrait Tableau C.5 du Rapport)
+## 4. Synthèse des résultats mesurés (Cas Utilisateur 42 — Rapport Section C.5)
 
-| Technologie | Taille 1 rec (Brut / Gzip) | Ratio Brut (1 rec) | Taille 100 rec (Brut / Gzip) | Taille 10 000 rec (Brut / Gzip) | Latence CPU Désérialisation (p50 / p95) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **gRPC Protobuf** | **35 o** / 52 o | **1,0x (Base)** | **3 284 o** / 683 o | **377,66 Ko** / 58,70 Ko | **0,40 µs** / 0,50 µs (1,0x) |
-| **REST (Minifié)** | **59 o** / 75 o | **1,7x** | **5 577 o** / 755 o | **616,68 Ko** / 73,79 Ko | **1,90 µs** / 2,00 µs (std) \| 0,40 µs (orjson) |
-| **GraphQL (Équitable)** | **79 o** / 91 o | **2,3x** | **5 796 o** / 774 o | **636,70 Ko** / 73,49 Ko | **2,10 µs** / 2,20 µs (std) \| 0,50 µs (orjson) |
-| **SOAP 1.1 (Enveloppe)** | **294 o** min / **314 o** fmt (209 o) | **8,4x à 9,0x** | **9 460 o** / 938 o | **986,87 Ko** / 80,65 Ko | **4,60 µs** / 5,20 µs (lxml) \| 12,3 µs (DOM) |
+| Technologie | Taille 1 rec (Brut) | Ratio vs gRPC | Remarque technique |
+| :--- | :---: | :---: | :--- |
+| **gRPC Protobuf** | **35 o** | **1,0x (Base)** | Encodage binaire compact (tags d'index + varints). |
+| **REST (Minifié)** | **59 o** | **1,7x** | JSON minimal `{"id":42,"name":"...","email":"..."}`. |
+| **GraphQL (Champs choisis)** | **69 o** | **2,0x** | Enveloppe `{"data":{"user":...}}` limitée aux champs demandés (`name`, `email`). |
+| **REST (Profil complet)** | **139 o** | **4,0x** | Sur-récupération (*over-fetching*) incluant métadonnées non filtrées. |
+| **SOAP 1.1 (Enveloppe XML)** | **324 o** *(312 o min.)* | **9,3x** *(8,9x)* | Enveloppe XML, espaces de noms et balises ouvrantes/fermantes. |
+
+*Exécutez `python bench/run_benchmarks.py` pour obtenir également les mesures multi-échelles (100 et 10 000 enregistrements, avec et sans gzip) ainsi que les latences CPU de désérialisation (`json` standard, `orjson`, `lxml`, `protobuf`).*
 
 ---
 
@@ -125,7 +128,7 @@ python graphql/client.py
 ### gRPC (Protocol Buffers v3 + HTTP/2)
 ```bash
 # Compilation du proto (déjà généré dans le dépôt) :
-python -m grpc_tools.protoc -I. --python_out=grpc/ --grpc_python_out=grpc/ grpc/user.proto
+python -m grpc_tools.protoc -Igrpc --python_out=grpc --grpc_python_out=grpc grpc/user.proto
 
 # Terminal 1 : Serveur gRPC
 python grpc/server.py
