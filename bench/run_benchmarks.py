@@ -43,7 +43,7 @@ user_full = {
     "role": "admin",
     "active": True,
     "createdAt": "2026-01-15T10:30:00Z",
-    "ordersCount": 12,
+    "ordersCount": 9,
 }
 users_100 = [{"id": i, "name": f"User {i}", "email": f"user{i}@example.com"} for i in range(1, 101)]
 users_10000 = [{"id": i, "name": f"User {i}", "email": f"user{i}@example.com"} for i in range(1, 10001)]
@@ -146,31 +146,31 @@ print(
 )
 print(
     f"{'REST JSON (Minifié)':<26} | {len(rest_min_1):>3} o / {len(gzip.compress(rest_min_1)):>3} o      | "
-    f"{len(rest_min_1)/len(grpc_bin_1):<5.1f}x | "
+    f"{f'{len(rest_min_1)/len(grpc_bin_1):.1f}x':<6} | "
     f"{len(rest_min_100):>5} o / {len(gzip.compress(rest_min_100)):>3} o     | "
     f"{len(rest_min_10000)/1000:>6.2f} Ko / {len(gzip.compress(rest_min_10000))/1000:>5.2f} Ko   | "
     f"{p50_rest_std:.2f} / {p95_rest_std:.2f} µs (std) | {p50_rest_orjson:.2f} µs (orjson)"
 )
 print(
     f"{'REST JSON (Profil complet)':<26} | {len(rest_full_1):>3} o / {len(gzip.compress(rest_full_1)):>3} o      | "
-    f"{len(rest_full_1)/len(grpc_bin_1):<5.1f}x | {'-':<19} | {'-':<22} | -"
+    f"{f'{len(rest_full_1)/len(grpc_bin_1):.1f}x':<6} | {'-':<19} | {'-':<22} | -"
 )
 print(
     f"{'GraphQL (Champs choisis)':<26} | {len(gql_targeted_1):>3} o / {len(gzip.compress(gql_targeted_1)):>3} o      | "
-    f"{len(gql_targeted_1)/len(grpc_bin_1):<5.1f}x | "
+    f"{f'{len(gql_targeted_1)/len(grpc_bin_1):.1f}x':<6} | "
     f"{len(gql_min_100):>5} o / {len(gzip.compress(gql_min_100)):>3} o     | "
     f"{len(gql_min_10000)/1000:>6.2f} Ko / {len(gzip.compress(gql_min_10000))/1000:>5.2f} Ko   | "
     f"{p50_gql_std:.2f} / {p95_gql_std:.2f} µs (std) | {p50_gql_orjson:.2f} µs (orjson)"
 )
 print(
     f"{'SOAP 1.1 (Minifié)':<26} | {len(soap_xml_min_1):>3} o / {len(gzip.compress(soap_xml_min_1)):>3} o      | "
-    f"{len(soap_xml_min_1)/len(grpc_bin_1):<5.1f}x | "
+    f"{f'{len(soap_xml_min_1)/len(grpc_bin_1):.1f}x':<6} | "
     f"{len(soap_xml_100):>5} o / {len(gzip.compress(soap_xml_100)):>3} o     | "
     f"{len(soap_xml_10000)/1000:>6.2f} Ko / {len(gzip.compress(soap_xml_10000))/1000:>5.2f} Ko   | "
     f"{p50_soap:.2f} / {p95_soap:.2f} µs (lxml)"
 )
 print(
     f"{'SOAP 1.1 (Formaté)':<26} | {len(soap_xml_fmt_1):>3} o / {len(gzip.compress(soap_xml_fmt_1)):>3} o      | "
-    f"{len(soap_xml_fmt_1)/len(grpc_bin_1):<5.1f}x | {'-':<19} | {'-':<22} | -"
+    f"{f'{len(soap_xml_fmt_1)/len(grpc_bin_1):.1f}x':<6} | {'-':<19} | {'-':<22} | -"
 )
 print("=" * 116)
